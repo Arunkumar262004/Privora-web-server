@@ -1,0 +1,13 @@
+{
+  "name": "photo-wallet-web-root",
+  "version": "1.0.0",
+  "description": "Root proxy package.json for Render deployment",
+  "scripts": {
+    "postinstall": "npm install --prefix backend",
+    "build": "echo 'Build complete'",
+    "start": "node backend/src/server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
