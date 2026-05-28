@@ -1,27 +1,44 @@
 const attachmentService = require('../services/attachmentService');
 
-// @desc    Upload a new attachment (photo/receipt)
+// @desc    Upload one OR multiple attachments (image data only — no title required)
 // @route   POST /api/attachments
 // @access  Private
 const addAttachment = async (req, res) => {
-  const { title, description, imageUrl } = req.body;
-
-  if (!title || !imageUrl) {
-    return res.status(400).json({ success: false, message: 'Please provide title and image data' });
-  }
-
   try {
+    const { images, imageUrl, mimeType } = req.body;
+
+    // ── Bulk upload (array of images) ──────────────────────────────────────────
+    if (Array.isArray(images) && images.length > 0) {
+      const attachments = await attachmentService.createAttachments(
+        req.user._id,
+        images,
+      );
+      return res.status(201).json({
+        success: true,
+        count: attachments.length,
+        data: attachments,
+      });
+    }
+
+    // ── Single upload (legacy / fallback) ─────────────────────────────────────
+    if (!imageUrl) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide image data',
+      });
+    }
+
     const attachment = await attachmentService.createAttachment(
       req.user._id,
-      title,
-      description,
-      imageUrl
+      imageUrl,
+      mimeType || 'image/jpeg',
     );
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       data: attachment,
     });
+
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }
@@ -33,11 +50,7 @@ const addAttachment = async (req, res) => {
 const fetchAttachments = async (req, res) => {
   try {
     const attachments = await attachmentService.getAttachments(req.user._id);
-
-    res.json({
-      success: true,
-      data: attachments,
-    });
+    res.json({ success: true, data: attachments });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

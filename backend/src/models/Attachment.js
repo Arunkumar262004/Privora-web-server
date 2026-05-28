@@ -9,7 +9,7 @@ const attachmentSchema = new mongoose.Schema(
     },
     title: {
       type: String,
-      required: [true, 'Please provide an attachment title'],
+      default: '',
     },
     description: {
       type: String,
@@ -18,6 +18,10 @@ const attachmentSchema = new mongoose.Schema(
     imageUrl: {
       type: String,
       required: [true, 'Please provide base64 image data or image URL'],
+    },
+    mimeType: {
+      type: String,
+      default: 'image/jpeg',
     },
   },
   {

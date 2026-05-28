@@ -1,21 +1,43 @@
 const Attachment = require('../models/Attachment');
 
 /**
- * Create a new photo attachment
+ * Create one attachment (image only — no title required)
  */
-const createAttachment = async (userId, title, description, imageUrl) => {
-  if (!title || !imageUrl) {
-    throw new Error('Please provide title and photo image data');
+const createAttachment = async (userId, imageUrl, mimeType = 'image/jpeg', title = '') => {
+  if (!imageUrl) {
+    throw new Error('Please provide image data');
   }
 
   const attachment = await Attachment.create({
     userId,
     title,
-    description: description || '',
+    description: '',
     imageUrl,
+    mimeType,
   });
 
   return attachment;
+};
+
+/**
+ * Bulk-create multiple attachments at once for a user.
+ * images: [{ imageUrl, mimeType }]
+ */
+const createAttachments = async (userId, images) => {
+  if (!Array.isArray(images) || images.length === 0) {
+    throw new Error('Please provide at least one image');
+  }
+
+  const docs = images.map(img => ({
+    userId,
+    title: '',
+    description: '',
+    imageUrl: img.imageUrl,
+    mimeType: img.mimeType || 'image/jpeg',
+  }));
+
+  const attachments = await Attachment.insertMany(docs);
+  return attachments;
 };
 
 /**
@@ -28,5 +50,6 @@ const getAttachments = async (userId) => {
 
 module.exports = {
   createAttachment,
+  createAttachments,
   getAttachments,
 };
