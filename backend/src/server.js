@@ -6,6 +6,7 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const expenseRoutes = require('./routes/expenseRoutes');
 const calendarRoutes = require('./routes/calendarRoutes');
+const attachmentRoutes = require('./routes/attachmentRoutes');
 
 // Connect to Database
 connectDB();
@@ -14,12 +15,14 @@ const app = express();
 
 // Middlewares
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/calendar-notes', calendarRoutes);
+app.use('/api/attachments', attachmentRoutes);
 
 // Base route
 app.get('/', (req, res) => {

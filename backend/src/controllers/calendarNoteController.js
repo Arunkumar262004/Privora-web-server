@@ -1,5 +1,4 @@
-const CalendarNote = require('../models/CalendarNote');
-const Transaction = require('../models/Transaction');
+const calendarNoteService = require('../services/calendarNoteService');
 
 // @desc    Add or update note for a date
 // @route   POST /api/calendar-notes
@@ -12,12 +11,7 @@ const upsertNote = async (req, res) => {
   }
 
   try {
-    // Find if note already exists for this date and user, then update, else create
-    const note = await CalendarNote.findOneAndUpdate(
-      { userId: req.user._id, date },
-      { title, content },
-      { new: true, upsert: true, runValidators: true }
-    );
+    const note = await calendarNoteService.upsertNote(req.user._id, date, title, content);
 
     res.status(200).json({
       success: true,
@@ -39,24 +33,11 @@ const getCalendarData = async (req, res) => {
   }
 
   try {
-    // Get all custom notes in the specified month
-    const notes = await CalendarNote.find({
-      userId: req.user._id,
-      date: { $regex: `^${month}` }
-    });
-
-    // Also get all transactions in this month to show as indicators/summaries on the calendar days
-    const transactions = await Transaction.find({
-      userId: req.user._id,
-      date: { $regex: `^${month}` }
-    }).select('date type amount category description');
+    const result = await calendarNoteService.getCalendarData(req.user._id, month);
 
     res.json({
       success: true,
-      data: {
-        notes,
-        transactions,
-      }
+      data: result
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -68,15 +49,12 @@ const getCalendarData = async (req, res) => {
 // @access  Private
 const deleteNote = async (req, res) => {
   try {
-    const note = await CalendarNote.findOne({ _id: req.params.id, userId: req.user._id });
+    const result = await calendarNoteService.deleteNote(req.params.id, req.user._id);
 
-    if (!note) {
-      return res.status(404).json({ success: false, message: 'Note not found' });
-    }
-
-    await note.deleteOne();
-
-    res.json({ success: true, message: 'Note removed' });
+    res.json({
+      success: true,
+      message: result.message
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

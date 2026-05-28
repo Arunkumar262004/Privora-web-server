@@ -1,5 +1,4 @@
-const Transaction = require('../models/Transaction');
-const User = require('../models/User');
+const expenseService = require('../services/expenseService');
 
 // @desc    Add credit/debit transaction
 // @route   POST /api/expenses
@@ -11,43 +10,22 @@ const addTransaction = async (req, res) => {
     return res.status(400).json({ success: false, message: 'Please provide type, amount, category and date' });
   }
 
-  if (amount <= 0) {
-    return res.status(400).json({ success: false, message: 'Amount must be greater than zero' });
-  }
-
   try {
-    const user = await User.findById(req.user._id);
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
-    }
-
-    // Save transaction
-    const transaction = await Transaction.create({
-      userId: req.user._id,
+    const result = await expenseService.addTransaction(
+      req.user._id,
       type,
       amount,
       category,
       description,
-      date, // YYYY-MM-DD
-    });
-
-    // Update user balance
-    if (type === 'credit') {
-      user.walletBalance += Number(amount);
-    } else if (type === 'debit') {
-      user.walletBalance -= Number(amount);
-    }
-    await user.save();
+      date
+    );
 
     res.status(201).json({
       success: true,
-      data: {
-        transaction,
-        newBalance: user.walletBalance
-      }
+      data: result
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(400).json({ success: false, message: error.message });
   }
 };
 
@@ -62,25 +40,11 @@ const getDailyExpenses = async (req, res) => {
   }
 
   try {
-    const transactions = await Transaction.find({ userId: req.user._id, date });
+    const result = await expenseService.getDailyExpenses(req.user._id, date);
     
-    // Calculate total credit and debit for that day
-    let totalCredit = 0;
-    let totalDebit = 0;
-    transactions.forEach(tx => {
-      if (tx.type === 'credit') totalCredit += tx.amount;
-      if (tx.type === 'debit') totalDebit += tx.amount;
-    });
-
     res.json({
       success: true,
-      data: {
-        date,
-        transactions,
-        totalCredit,
-        totalDebit,
-        netExpense: totalDebit - totalCredit
-      }
+      data: result
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -94,33 +58,11 @@ const getPassbookDetails = async (req, res) => {
   const { month } = req.query; // Optional: YYYY-MM format
 
   try {
-    let query = { userId: req.user._id };
-    
-    if (month) {
-      // Find transactions where the date string starts with the YYYY-MM prefix
-      query.date = { $regex: `^${month}` };
-    }
-
-    const transactions = await Transaction.find(query).sort({ date: -1, createdAt: -1 });
-
-    // Calculate overall stats for the filtered list
-    let totalCredit = 0;
-    let totalDebit = 0;
-    transactions.forEach(tx => {
-      if (tx.type === 'credit') totalCredit += tx.amount;
-      if (tx.type === 'debit') totalDebit += tx.amount;
-    });
+    const result = await expenseService.getPassbookDetails(req.user._id, month);
 
     res.json({
       success: true,
-      data: {
-        transactions,
-        summary: {
-          totalCredit,
-          totalDebit,
-          balance: totalCredit - totalDebit
-        }
-      }
+      data: result
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

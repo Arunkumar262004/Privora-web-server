@@ -5,6 +5,7 @@ const {
   loginUser,
   getUserProfile,
   getUsersList,
+  resetPassword,
 } = require('../controllers/authController');
 const { protect, adminOnly } = require('../middlewares/authMiddleware');
 
@@ -12,5 +13,6 @@ router.post('/login', loginUser);
 router.post('/create-user', protect, adminOnly, registerUser);
 router.get('/profile', protect, getUserProfile);
 router.get('/users', protect, adminOnly, getUsersList);
+router.post('/reset-password', protect, resetPassword);
 
 module.exports = router;
