@@ -7,6 +7,11 @@ const attachmentSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    folderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Folder',
+      default: null,
+    },
     title: {
       type: String,
       default: '',

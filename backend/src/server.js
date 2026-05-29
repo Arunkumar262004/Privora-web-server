@@ -7,6 +7,7 @@ const authRoutes = require('./routes/authRoutes');
 const expenseRoutes = require('./routes/expenseRoutes');
 const calendarRoutes = require('./routes/calendarRoutes');
 const attachmentRoutes = require('./routes/attachmentRoutes');
+const folderRoutes = require('./routes/folderRoutes');
 
 // Connect to Database
 connectDB();
@@ -23,6 +24,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/calendar-notes', calendarRoutes);
 app.use('/api/attachments', attachmentRoutes);
+app.use('/api/folders', folderRoutes);
 
 // Base route
 app.get('/', (req, res) => {

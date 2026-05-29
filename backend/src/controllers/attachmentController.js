@@ -5,13 +5,14 @@ const attachmentService = require('../services/attachmentService');
 // @access  Private
 const addAttachment = async (req, res) => {
   try {
-    const { images, imageUrl, mimeType } = req.body;
+    const { images, imageUrl, mimeType, folderId } = req.body;
 
     // ── Bulk upload (array of images) ──────────────────────────────────────────
     if (Array.isArray(images) && images.length > 0) {
       const attachments = await attachmentService.createAttachments(
         req.user._id,
         images,
+        folderId || null
       );
       return res.status(201).json({
         success: true,
@@ -32,6 +33,8 @@ const addAttachment = async (req, res) => {
       req.user._id,
       imageUrl,
       mimeType || 'image/jpeg',
+      '',
+      folderId || null
     );
 
     return res.status(201).json({
@@ -49,8 +52,34 @@ const addAttachment = async (req, res) => {
 // @access  Private
 const fetchAttachments = async (req, res) => {
   try {
-    const attachments = await attachmentService.getAttachments(req.user._id);
+    const { folderId } = req.query;
+    let query = { userId: req.user._id };
+
+    if (folderId) {
+      query.folderId = folderId === 'null' ? null : folderId;
+    }
+
+    // If no folderId parameter is provided, we return ALL attachments
+    const Attachment = require('../models/Attachment');
+    const attachments = await Attachment.find(query).sort({ createdAt: -1 });
     res.json({ success: true, data: attachments });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Delete a specific attachment
+// @route   DELETE /api/attachments/:id
+// @access  Private
+const deleteAttachment = async (req, res) => {
+  try {
+    const Attachment = require('../models/Attachment');
+    const attachment = await Attachment.findOne({ _id: req.params.id, userId: req.user._id });
+    if (!attachment) {
+      return res.status(404).json({ success: false, message: 'Photo not found' });
+    }
+    await attachment.deleteOne();
+    res.json({ success: true, message: 'Photo deleted successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -59,4 +88,5 @@ const fetchAttachments = async (req, res) => {
 module.exports = {
   addAttachment,
   fetchAttachments,
+  deleteAttachment,
 };

@@ -3,13 +3,14 @@ const Attachment = require('../models/Attachment');
 /**
  * Create one attachment (image only — no title required)
  */
-const createAttachment = async (userId, imageUrl, mimeType = 'image/jpeg', title = '') => {
+const createAttachment = async (userId, imageUrl, mimeType = 'image/jpeg', title = '', folderId = null) => {
   if (!imageUrl) {
     throw new Error('Please provide image data');
   }
 
   const attachment = await Attachment.create({
     userId,
+    folderId: folderId || null,
     title,
     description: '',
     imageUrl,
@@ -23,13 +24,14 @@ const createAttachment = async (userId, imageUrl, mimeType = 'image/jpeg', title
  * Bulk-create multiple attachments at once for a user.
  * images: [{ imageUrl, mimeType }]
  */
-const createAttachments = async (userId, images) => {
+const createAttachments = async (userId, images, folderId = null) => {
   if (!Array.isArray(images) || images.length === 0) {
     throw new Error('Please provide at least one image');
   }
 
   const docs = images.map(img => ({
     userId,
+    folderId: folderId || null,
     title: '',
     description: '',
     imageUrl: img.imageUrl,
