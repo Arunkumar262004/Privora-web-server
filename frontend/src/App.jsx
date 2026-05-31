@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+export const API_BASE_URL = 'https://photo-wallet-app.onrender.com/api';
 
 const App = () => {
   // Auth state
