@@ -35,7 +35,7 @@ const Login = ({ apiBaseUrl, onLoginSuccess }) => {
   return (
     <div className="auth-page">
       <div className="glass-panel auth-card">
-        <span className="auth-logo">💼</span>
+        {/* <span className="auth-logo">💼</span> */}
         <h1 className="auth-title">Photo Wallet</h1>
         <p className="auth-subtitle">Admin Control Panel</p>
 
@@ -68,9 +68,7 @@ const Login = ({ apiBaseUrl, onLoginSuccess }) => {
 
           <button type="submit" className="btn-primary">Sign In</button>
         </form>
-        <div style={{ marginTop: '20px', fontSize: '12px', color: '#666' }}>
-          Seed Admin: <strong>arunkumar957877@gmail.com</strong> / <strong>Arun@123</strong>
-        </div>
+     
       </div>
     </div>
   );
