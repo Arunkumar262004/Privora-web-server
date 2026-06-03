@@ -28,6 +28,9 @@ const attachmentSchema = new mongoose.Schema(
       type: String,
       default: 'image/jpeg',
     },
+    fileData: {
+      type: Buffer,
+    },
   },
   {
     timestamps: true,

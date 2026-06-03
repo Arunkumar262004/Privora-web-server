@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Attachment = require('../models/Attachment');
 
 /**
@@ -8,13 +9,28 @@ const createAttachment = async (userId, imageUrl, mimeType = 'image/jpeg', title
     throw new Error('Please provide image data');
   }
 
+  const _id = new mongoose.Types.ObjectId();
+
+  let base64Data = imageUrl;
+  let mime = mimeType;
+  if (imageUrl.startsWith('data:')) {
+    const match = imageUrl.match(/^data:([^;]+);base64,(.+)$/);
+    if (match) {
+      mime = match[1];
+      base64Data = match[2];
+    }
+  }
+  const fileBuffer = Buffer.from(base64Data, 'base64');
+
   const attachment = await Attachment.create({
+    _id,
     userId,
     folderId: folderId || null,
     title,
     description: '',
-    imageUrl,
-    mimeType,
+    imageUrl: `/api/attachments/file/${_id}`,
+    mimeType: mime,
+    fileData: fileBuffer,
   });
 
   return attachment;
@@ -29,14 +45,31 @@ const createAttachments = async (userId, images, folderId = null) => {
     throw new Error('Please provide at least one image');
   }
 
-  const docs = images.map(img => ({
-    userId,
-    folderId: folderId || null,
-    title: '',
-    description: '',
-    imageUrl: img.imageUrl,
-    mimeType: img.mimeType || 'image/jpeg',
-  }));
+  const docs = images.map(img => {
+    const _id = new mongoose.Types.ObjectId();
+    
+    let base64Data = img.imageUrl;
+    let mime = img.mimeType || 'image/jpeg';
+    if (img.imageUrl.startsWith('data:')) {
+      const match = img.imageUrl.match(/^data:([^;]+);base64,(.+)$/);
+      if (match) {
+        mime = match[1];
+        base64Data = match[2];
+      }
+    }
+    const fileBuffer = Buffer.from(base64Data, 'base64');
+
+    return {
+      _id,
+      userId,
+      folderId: folderId || null,
+      title: '',
+      description: '',
+      imageUrl: `/api/attachments/file/${_id}`,
+      mimeType: mime,
+      fileData: fileBuffer,
+    };
+  });
 
   const attachments = await Attachment.insertMany(docs);
   return attachments;
