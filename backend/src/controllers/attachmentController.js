@@ -1,4 +1,5 @@
 const attachmentService = require('../services/attachmentService');
+const { supabaseAdmin, bucketName } = require('../config/supabase');
 
 // Helper to convert relative imageUrl to absolute URL and exclude fileData
 const transformAttachment = (req, attachment) => {
@@ -128,14 +129,37 @@ const getAttachmentFile = async (req, res) => {
       } else {
         return res.status(400).json({ success: false, message: 'Invalid image data in database' });
       }
+    } else if (attachment.imageUrl && (attachment.imageUrl.startsWith('http://') || attachment.imageUrl.startsWith('https://'))) {
+      // Download from Supabase Storage
+      const bucketKey = `/${bucketName}/`;
+      const urlParts = attachment.imageUrl.split(bucketKey);
+      
+      if (urlParts.length < 2) {
+        return res.status(400).json({ success: false, message: 'Invalid file storage URL' });
+      }
+      
+      const storagePath = urlParts.slice(1).join(bucketKey);
+
+      const { data, error } = await supabaseAdmin.storage
+        .from(bucketName)
+        .download(storagePath);
+
+      if (error) {
+        console.error('Error downloading from Supabase storage:', error);
+        return res.status(404).json({ success: false, message: 'File not found in storage' });
+      }
+
+      // Convert Blob to Buffer
+      fileBuffer = Buffer.from(await data.arrayBuffer());
     } else {
-      return res.status(404).json({ success: false, message: 'Image data not found' });
+      return res.status(404).json({ success: false, message: 'File content not found' });
     }
 
     res.set('Content-Type', contentType);
     res.set('Cache-Control', 'private, max-age=86400');
     res.send(fileBuffer);
   } catch (error) {
+    console.error('getAttachmentFile error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
