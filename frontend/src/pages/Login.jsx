@@ -35,7 +35,7 @@ const Login = ({ apiBaseUrl, onLoginSuccess }) => {
   return (
     <div className="auth-page">
       <div className="glass-panel auth-card">
-        {/* <span className="auth-logo">💼</span> */}
+        <i className="bi bi-shield-lock auth-logo"></i>
         <h1 className="auth-title">Photo Wallet</h1>
         <p className="auth-subtitle">Admin Control Panel</p>
 

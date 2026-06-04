@@ -73,10 +73,10 @@ const CalendarComponent = ({ selectedDate, onSelectDate, transactions, notes, cu
   return (
     <div className="glass-panel calendar-section" style={{ padding: '24px' }}>
       <div className="calendar-header">
-        <h2 className="calendar-title">🗓️ {getMonthName(currentMonth)}</h2>
+        <h2 className="calendar-title"><i className="bi bi-calendar3 me-2"></i>{getMonthName(currentMonth)}</h2>
         <div className="month-nav">
-          <button className="btn-nav" onClick={prevMonth}>&lt; Prev</button>
-          <button className="btn-nav" onClick={nextMonth}>Next &gt;</button>
+          <button className="btn-nav" onClick={prevMonth}><i className="bi bi-chevron-left"></i> Prev</button>
+          <button className="btn-nav" onClick={nextMonth}>Next <i className="bi bi-chevron-right"></i></button>
         </div>
       </div>
 
@@ -111,14 +111,14 @@ const CalendarComponent = ({ selectedDate, onSelectDate, transactions, notes, cu
                 {/* Micro-preview of note title */}
                 {item.note && (
                   <div className="day-preview-text">
-                    📝 {item.note.title}
+                    <i className="bi bi-journal-text"></i> {item.note.title}
                   </div>
                 )}
 
                 {/* Micro-preview of transaction count */}
                 {item.transactions.length > 0 && !item.note && (
                   <div className="day-preview-text">
-                    💸 {item.transactions.length} txs
+                    <i className="bi bi-currency-dollar"></i> {item.transactions.length} txs
                   </div>
                 )}
               </div>
