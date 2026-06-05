@@ -2,15 +2,14 @@ const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.warn('WARNING: Supabase URL or Service Role Key is missing in environment variables.');
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.warn('WARNING: Supabase URL or Anon Key is missing in environment variables.');
 }
 
-// Admin client (bypasses RLS, used for backend file management operations)
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+// Admin client (used for backend file management operations)
+const supabaseAdmin = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: false,
     autoRefreshToken: false,

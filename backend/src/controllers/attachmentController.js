@@ -1,26 +1,52 @@
 const attachmentService = require('../services/attachmentService');
 const { supabaseAdmin, bucketName } = require('../config/supabase');
 
+// Extract the storage path from a full Supabase storage URL
+// e.g. https://xxx.supabase.co/storage/v1/object/public/Privora/Images/foo.jpg
+//  --> Images/foo.jpg
+const extractStoragePath = (imageUrl) => {
+  if (!imageUrl) return null;
+  // Match path after /object/public/<bucket>/ or /object/sign/<bucket>/
+  const regex = new RegExp(`/object/(?:public|sign)/${bucketName}/(.+?)(?:\\?|$)`);
+  const match = imageUrl.match(regex);
+  if (match) return match[1];
+  // Fallback: match after /<bucketName>/
+  const fallback = new RegExp(`/${bucketName}/(.+?)(?:\\?|$)`);
+  const m2 = imageUrl.match(fallback);
+  return m2 ? m2[1] : null;
+};
+
+// Helper to generate a 1-hour signed URL for a private Supabase file
+const getSignedUrl = async (storagePath) => {
+  const { data, error } = await supabaseAdmin.storage
+    .from(bucketName)
+    .createSignedUrl(storagePath, 3600); // 1 hour
+  if (error || !data?.signedUrl) return null;
+  return data.signedUrl;
+};
+
 // Helper to convert relative imageUrl to absolute URL and exclude fileData
-const transformAttachment = (req, attachment) => {
+const transformAttachment = async (req, attachment) => {
   const host = req.get('host');
   const protocol = req.protocol;
   const baseUrl = `${protocol}://${host}`;
   
   const obj = attachment.toObject ? attachment.toObject() : { ...attachment };
   
-  // If the existing imageUrl in DB is a base64 data string, we keep it as is
-  // for backward compatibility.
   if (obj.imageUrl && obj.imageUrl.startsWith('data:')) {
-    // Keep as is
-  } else if (obj.imageUrl) {
-    // Make relative imageUrl absolute
-    if (obj.imageUrl.startsWith('http://') || obj.imageUrl.startsWith('https://')) {
-      // Already absolute
-    } else {
-      const path = obj.imageUrl.startsWith('/') ? obj.imageUrl : `/${obj.imageUrl}`;
-      obj.imageUrl = `${baseUrl}${path}`;
+    // Legacy base64 — keep as is
+  } else if (obj.imageUrl && (obj.imageUrl.startsWith('http://') || obj.imageUrl.startsWith('https://'))) {
+    // Supabase URL — generate a signed URL so private bucket files load correctly
+    const storagePath = extractStoragePath(obj.imageUrl);
+    if (storagePath) {
+      const signed = await getSignedUrl(storagePath);
+      if (signed) obj.imageUrl = signed;
     }
+    // If signed URL fails, keep original URL as fallback
+  } else if (obj.imageUrl) {
+    // Relative path — make absolute
+    const path = obj.imageUrl.startsWith('/') ? obj.imageUrl : `/${obj.imageUrl}`;
+    obj.imageUrl = `${baseUrl}${path}`;
   }
   
   delete obj.fileData;
@@ -41,7 +67,7 @@ const addAttachment = async (req, res) => {
         images,
         folderId || null
       );
-      const data = attachments.map(item => transformAttachment(req, item));
+      const data = await Promise.all(attachments.map(item => transformAttachment(req, item)));
       return res.status(201).json({
         success: true,
         count: data.length,
@@ -65,7 +91,7 @@ const addAttachment = async (req, res) => {
       folderId || null
     );
 
-    const data = transformAttachment(req, attachment);
+    const data = await transformAttachment(req, attachment);
     return res.status(201).json({
       success: true,
       data: data,
@@ -84,7 +110,7 @@ const fetchAttachments = async (req, res) => {
     const { folderId } = req.query;
     let query = { userId: req.user._id };
 
-    if (folderId) {
+    if (folderId !== undefined) {
       query.folderId = folderId === 'null' ? null : folderId;
     }
 
@@ -94,7 +120,7 @@ const fetchAttachments = async (req, res) => {
       .select('-fileData') // Exclude the huge fileData field
       .sort({ createdAt: -1 });
 
-    const data = attachments.map(item => transformAttachment(req, item));
+    const data = await Promise.all(attachments.map(item => transformAttachment(req, item)));
     res.json({ success: true, data: data });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
