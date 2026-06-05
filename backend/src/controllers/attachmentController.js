@@ -200,6 +200,22 @@ const deleteAttachment = async (req, res) => {
     if (!attachment) {
       return res.status(404).json({ success: false, message: 'Photo not found' });
     }
+
+    // ── Delete file from Supabase storage bucket ──────────────────────────────
+    if (attachment.imageUrl && (attachment.imageUrl.startsWith('http://') || attachment.imageUrl.startsWith('https://'))) {
+      const storagePath = extractStoragePath(attachment.imageUrl);
+      if (storagePath) {
+        const { error: storageError } = await supabaseAdmin.storage
+          .from(bucketName)
+          .remove([storagePath]);
+        if (storageError) {
+          // Log but don't block — still remove the DB record
+          console.error('Supabase storage delete error:', storageError.message);
+        }
+      }
+    }
+
+    // ── Delete record from MongoDB ─────────────────────────────────────────────
     await attachment.deleteOne();
     res.json({ success: true, message: 'Photo deleted successfully' });
   } catch (error) {

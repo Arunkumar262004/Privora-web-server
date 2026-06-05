@@ -1,5 +1,17 @@
 const Folder = require('../models/Folder');
 const Attachment = require('../models/Attachment');
+const { supabaseAdmin, bucketName } = require('../config/supabase');
+
+// Extract the storage path from a full Supabase storage URL
+const extractStoragePath = (imageUrl) => {
+  if (!imageUrl) return null;
+  const regex = new RegExp(`/object/(?:public|sign)/${bucketName}/(.+?)(?:\\?|$)`);
+  const match = imageUrl.match(regex);
+  if (match) return match[1];
+  const fallback = new RegExp(`/${bucketName}/(.+?)(?:\\?|$)`);
+  const m2 = imageUrl.match(fallback);
+  return m2 ? m2[1] : null;
+};
 
 // @desc    Create a new photo album folder
 // @route   POST /api/folders
@@ -46,11 +58,26 @@ const deleteFolder = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Folder not found' });
     }
 
-    // Delete the folder
-    await folder.deleteOne();
+    // Fetch all attachments in this folder to get their storage paths
+    const attachments = await Attachment.find({ folderId: req.params.id, userId: req.user._id });
 
-    // Delete all attachments belonging to this folder
+    // ── Delete files from Supabase storage bucket ─────────────────────────────
+    const storagePaths = attachments
+      .map(a => extractStoragePath(a.imageUrl))
+      .filter(Boolean); // remove nulls (e.g. old base64 records)
+
+    if (storagePaths.length > 0) {
+      const { error: storageError } = await supabaseAdmin.storage
+        .from(bucketName)
+        .remove(storagePaths);
+      if (storageError) {
+        console.error('Supabase bulk storage delete error:', storageError.message);
+      }
+    }
+
+    // ── Delete MongoDB records ─────────────────────────────────────────────────
     await Attachment.deleteMany({ folderId: req.params.id, userId: req.user._id });
+    await folder.deleteOne();
 
     res.json({ success: true, message: 'Folder and its photos deleted successfully' });
   } catch (error) {
