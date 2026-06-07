@@ -36,7 +36,7 @@ const Login = ({ apiBaseUrl, onLoginSuccess }) => {
     <div className="auth-page">
       <div className="glass-panel auth-card">
         <i className="bi bi-shield-lock auth-logo"></i>
-        <h1 className="auth-title">Photo Wallet</h1>
+        <h1 className="auth-title">Privora</h1>
         <p className="auth-subtitle">Admin Control Panel</p>
 
         {error && <div className="alert alert-danger">{error}</div>}
